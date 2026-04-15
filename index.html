@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>To-Do App</title>
+</head>
+<body>
+  <h1>To-Do App</h1>
+
+  <input type="text" id="taskInput" placeholder="Enter task">
+  <button onclick="addTask()">Add Task</button>
+
+  <h2>Tasks</h2>
+  <ul id="taskList"></ul>
+
+  <script>
+    const API_URL = "https://n436q2go9j.execute-api.us-east-1.amazonaws.com/tasks";
+
+    //Add Task
+    async function addTask() {
+      const input = document.getElementById("taskInput");
+      const task = input.value;
+
+      if (!task) return;
+
+      await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ task })
+      });
+
+      input.value = "";        //clear input
+      await loadTasks();       //wait for reload
+    }
+
+    //Load Tasks
+    async function loadTasks() {
+      const res = await fetch(API_URL);
+      const data = await res.json();
+
+      const list = document.getElementById("taskList");
+      list.innerHTML = "";
+
+      data.forEach(t => {
+        const li = document.createElement("li");
+
+        const text = document.createElement("span");
+        text.textContent = t.task + " ";
+
+        const editBtn = document.createElement("button");
+        editBtn.textContent = "Edit";
+        editBtn.onclick = () => editTask(t.id, t.task);
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "Delete";
+        deleteBtn.onclick = () => deleteTask(t.id);
+
+        li.appendChild(text);
+        li.appendChild(editBtn);
+        li.appendChild(deleteBtn);
+
+        list.appendChild(li);
+      });
+    }
+
+    //Delete Task
+    async function deleteTask(id) {
+      await fetch(`${API_URL}/${id}`, {
+        method: "DELETE"
+      });
+
+      await loadTasks();   //refresh once
+    }
+
+    //Load tasks ONCE when page loads
+    window.onload = loadTasks;
+ 
+//Edit Task  
+ async function editTask(id, currentText) {
+  const newTask = prompt("Edit task:", currentText);
+
+  if (!newTask) return;
+
+  await fetch(`${API_URL}/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ task: newTask })
+  });
+
+  await loadTasks();
+}
+
+  </script>
+</body>
+</html>
